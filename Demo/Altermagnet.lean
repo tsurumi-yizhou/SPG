@@ -3,6 +3,7 @@ import SPG.Algebra.Group
 import SPG.Geometry.SpatialOps
 import SPG.Geometry.SpinOps
 import SPG.Interface.Notation
+import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 
 namespace Demo.Altermagnet
 
@@ -15,16 +16,18 @@ open SPG.Algebra
 -- 1. Generators for D4h altermagnet
 def mat_4_z : Matrix (Fin 3) (Fin 3) ℚ := ![![0, -1, 0], ![1, 0, 0], ![0, 0, 1]]
 def mat_inv : Matrix (Fin 3) (Fin 3) ℚ := ![![ -1, 0, 0], ![0, -1, 0], ![0, 0, -1]]
+-- mat_2_xy defined explicitly for clarity (rotation by 180 degrees about x+y axis)
+def mat_2_xy : Matrix (Fin 3) (Fin 3) ℚ := ![![0, 1, 0], ![1, 0, 0], ![0, 0, -1]]
 
 -- Generators
 -- C4z * T : The key altermagnetic symmetry
--- C2x     : Standard rotation
+-- C2xy    : Rotation about x+y axis
 -- I       : Inversion
 def gen_C4z_TR : SPGElement := Op[mat_4_z, ^-1]
-def gen_C2x    : SPGElement := Op[mat_2_x, ^1]
+def gen_C2xy   : SPGElement := Op[mat_2_xy, ^1]
 def gen_Inv    : SPGElement := Op[mat_inv, ^1]
 
-def Altermagnet_Group : List SPGElement := generate_group [gen_C4z_TR, gen_C2x, gen_Inv]
+def Altermagnet_Group : List SPGElement := generate_group [gen_C4z_TR, gen_C2xy, gen_Inv]
 
 -- 2. Hamiltonian Analysis
 -- We want to find H(k) ~ c_ij k_i k_j terms allowed by symmetry.
@@ -72,56 +75,72 @@ def act_on_k (g : SPGElement) (k : Vec3) : Vec3 :=
 -- So if g.spin = -I (Time Reversal), the spin vector flips.
 -- If g.spin = I, spin vector stays.
 
-def act_on_spin (g : SPGElement) (s : SpinComp) : SpinComp :=
-  if g.spin == spin_neg_I then -- Time Reversal
-    match s with
-    | .I => .I  -- Identity matrix is T-even
-    | _  => s   -- This is wrong. T sigma T^-1 = -sigma.
-                -- But we represent "basis elements". We need a coefficient sign.
-                -- Let's handle sign separately.
-    -- s -- Just return component, sign handled in `check_symmetry`
-  else
-    s
+def act_on_spin (g : SPGElement) (s : SpinComp) : Vec3 :=
+  let s_vec : Vec3 := match s with
+    | .x => ![1, 0, 0]
+    | .y => ![0, 1, 0]
+    | .z => ![0, 0, 1]
+    | .I => ![0, 0, 0] -- Handle I separately
 
-def spin_sign (g : SPGElement) (s : SpinComp) : ℚ :=
-  if g.spin == spin_neg_I then
-    match s with
-    | .I => 1
-    | _ => -1 -- Spin flips under Time Reversal
+  if s == .I then ![0, 0, 0] -- I transforms to I (scalar)
   else
-    1
+    -- Apply spatial rotation R to the axial vector sigma
+    -- sigma' = (det R) * R * sigma
+    -- If spin part has T (-I), then sigma' = - sigma'
+    let detR := Matrix.det g.spatial
+    let rotated := Matrix.mulVec g.spatial s_vec
+    let axial_rotated := detR • rotated -- Scalar multiplication
 
--- Check if a term (Quad * Spin) is invariant under the group
--- Term: C * Q(k) * S
--- Transform: C * Q(g^-1 k) * (g S g^-1)
--- We need Q(g^-1 k) * (spin_sign) == Q(k) for all g.
--- Actually, let's just checking specific terms.
+    if g.spin == spin_neg_I then
+      -axial_rotated
+    else
+      axial_rotated
+
+-- Helper to check if a transformed spin vector matches a target basis component (with sign)
+-- Returns 0 if orthogonal, 1 or -1 if parallel/antiparallel
+def project_spin (v : Vec3) (target : SpinComp) : ℚ :=
+  match target with
+  | .x => v 0
+  | .y => v 1
+  | .z => v 2
+  | .I => 0
 
 def check_invariant (q : QuadTerm) (s : SpinComp) : Bool :=
   Altermagnet_Group.all fun g =>
     -- Symmetry constraint: H(k) = U H(g^-1 k) U^dagger
-    -- H(k) = f(k) * sigma
-    -- U f(g^-1 k) sigma U^dagger = f(g^-1 k) * (U sigma U^dagger)
-    -- So we need: f(k) * sigma = f(g^-1 k) * (sigma_transformed)
-    -- Here sigma_transformed = s * spin_sign(g)
-    -- And f(k) is quadratic form.
+    -- H(k) = f(k) * sigma_s
+    -- Transform: f(g^-1 k) * (g sigma_s g^-1)
+    -- We check: f(g k) * (transformed sigma) == f(k) * sigma_s
+    -- Note: using g k instead of g^-1 k for group average equivalence.
 
-    -- Let's test invariance on a set of random k-points to avoid accidental zeros
     let test_ks : List Vec3 := [![1, 0, 0], ![0, 1, 0], ![0, 0, 1], ![1, 1, 0], ![1, 0, 1], ![0, 1, 1], ![1, 2, 3]]
 
     test_ks.all fun k =>
-      -- Calculate g^-1 k. Since our group is finite and closed, g^-1 is in group.
-      -- But for checking invariance, checking H(g k) = g H(k) g^-1 is equivalent.
-      -- Let's check: H(g k) = g H(k) g^-1
-      -- LHS: f(g k) * sigma
-      -- RHS: g (f(k) * sigma) g^-1 = f(k) * (g sigma g^-1) = f(k) * sigma * spin_sign(g)
-
       let val_gk := eval_quad q (act_on_k g k)
       let val_k  := eval_quad q k
-      let s_sgn  := spin_sign g s
 
-      -- We need: val_gk == val_k * s_sgn
-      val_gk == val_k * s_sgn
+      if s == .I then
+         -- Scalar term: val_gk == val_k
+         val_gk == val_k
+      else
+        -- Vector term: val_gk * (transformed sigma) == val_k * sigma_s
+        -- We only support cases where transformed sigma is parallel to sigma_s
+        -- (i.e. no mixing like x -> y).
+        -- Let's project transformed sigma onto s.
+        let s_prime := act_on_spin g s
+        let coeff := project_spin s_prime s
+
+        -- Check if it stays in the same direction (possibly with sign change)
+        -- And check if orthogonal components are zero (no mixing)
+        let is_eigen :=
+             (s == .x && s_prime 1 == 0 && s_prime 2 == 0) ||
+             (s == .y && s_prime 0 == 0 && s_prime 2 == 0) ||
+             (s == .z && s_prime 0 == 0 && s_prime 1 == 0)
+
+        if is_eigen then
+          val_gk * coeff == val_k
+        else
+          false -- If mixing occurs, this single term is not an invariant by itself.
 
 def find_invariants : List (QuadTerm × SpinComp) :=
   let terms := (all_quads.product [.I, .x, .y, .z])
@@ -170,14 +189,33 @@ def main : IO Unit := do
       Demo.Altermagnet.Altermagnet_Group.all fun g =>
         let val_gk := f (Demo.Altermagnet.act_on_k g k)
         let val_k  := f k
-        let s_sgn  := Demo.Altermagnet.spin_sign g s
-        val_gk == val_k * s_sgn
+        -- Re-use projection logic from check_invariant
+        if s == .I then
+          val_gk == val_k
+        else
+          let s_prime := Demo.Altermagnet.act_on_spin g s
+          let coeff := Demo.Altermagnet.project_spin s_prime s
+
+          -- Check eigenstate property (no mixing)
+          let is_eigen :=
+              (s == .x && s_prime 1 == 0 && s_prime 2 == 0) ||
+              (s == .y && s_prime 0 == 0 && s_prime 2 == 0) ||
+              (s == .z && s_prime 0 == 0 && s_prime 1 == 0)
+
+          if is_eigen then
+             val_gk * coeff == val_k
+          else
+             false
 
   let kx2_minus_ky2 (k : SPG.Vec3) : ℚ := k 0 * k 0 - k 1 * k 1
   let kx2_plus_ky2  (k : SPG.Vec3) : ℚ := k 0 * k 0 + k 1 * k 1
+  let kx_ky         (k : SPG.Vec3) : ℚ := k 0 * k 1
 
   if check_custom kx2_minus_ky2 .z then
-    IO.println "  (kx^2 - ky^2) * σz  [Altermagnetic d-wave term!]"
+    IO.println "  (kx^2 - ky^2) * σz  [d-wave altermagnetism (x^2-y^2 type)]"
+
+  if check_custom kx_ky .z then
+    IO.println "  kx ky * σz          [d-wave altermagnetism (xy type)]"
 
   if check_custom kx2_plus_ky2 .I then
     IO.println "  (kx^2 + ky^2) * I   [Standard kinetic term]"
