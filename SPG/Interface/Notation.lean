@@ -3,12 +3,13 @@ Copyright (c) 2024 Yizhou Tong. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizhou Tong
 -/
-import SPG.Algebra.Basic
-import SPG.Geometry.SpinOps
+import SPG.Core.Algebra.AlgebraBasics
+import SPG.Core.Geometry.SpinOps
 
 namespace SPG.Interface
 
-open SPG.Geometry.SpinOps
+open SPG.Core.Algebra
+open SPG.Core.Geometry.SpinOps
 
 -- Notation for spin operations
 -- ^1 for spin identity (spin_I)

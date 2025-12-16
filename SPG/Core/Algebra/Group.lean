@@ -3,9 +3,11 @@ Copyright (c) 2024 Yizhou Tong. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizhou Tong
 -/
-import SPG.Algebra.Basic
+import SPG.Core.Algebra.AlgebraBasics
 
-namespace SPG.Algebra
+namespace SPG.Core.Algebra
+
+open SPG.Core.Algebra
 
 /--
 Generate the group closure from a list of generators.
@@ -26,4 +28,4 @@ partial def generate_group (gens : List SPGElement) : List SPGElement :=
       loop combined
   loop gens
 
-end SPG.Algebra
+end SPG.Core.Algebra

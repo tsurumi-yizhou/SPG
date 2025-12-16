@@ -3,12 +3,16 @@ Copyright (c) 2024 Yizhou Tong. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizhou Tong
 -/
-import SPG.Data.ICE_Notation
-import SPG.Geometry.SpatialOps
+import SPG.Core.Algebra.AlgebraBasics
+import SPG.Core.Geometry.SpatialOps
+import SPG.Interface.Notation
+import SPG.Data.IceNotation
 
 namespace SPG.Data.Tetragonal
 
-open SPG.Geometry.SpatialOps
+open SPG.Core.Algebra
+open SPG.Core.Geometry.SpatialOps
+open SPG.Data.ICE_Notation
 
 -- Generators for CuFeS2 (Chalcopyrite structure, I-42d, #122)
 -- Using 4bar_z, 2_x, and m_xy (standard generators for D2d point group)

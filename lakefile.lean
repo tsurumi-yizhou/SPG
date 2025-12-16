@@ -8,17 +8,20 @@ lean_lib "SPG" where
   -- add library configuration options here
   -- The default root is `SPG`, which matches our file `SPG.lean`
 
-lean_exe "test_basic_ops" where
-  root := `Test.BasicOps
-
-lean_exe "test_symmetry_breaking" where
-  root := `Test.SymmetryBreaking
-
 lean_exe "demo_altermagnet" where
   root := `Demo.Altermagnet
 
 lean_exe "demo_magnetic_phases" where
   root := `Demo.MagneticPhases
+
+lean_exe "demo_multiferroic" where
+  root := `Demo.Multiferroic
+
+lean_exe "demo_spin_splitting" where
+  root := `Demo.SpinSplitting
+
+lean_exe "demo_coupling" where
+  root := `Demo.Coupling
 
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git"

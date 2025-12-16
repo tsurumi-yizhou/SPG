@@ -6,7 +6,7 @@ Authors: Yizhou Tong
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Algebra.Ring.Rat
 
-namespace SPG
+namespace SPG.Core.Algebra
 
 abbrev Vec3 := Fin 3 → ℚ
 
@@ -42,4 +42,4 @@ instance : Repr SPGElement where
     Std.Format.text "SPGElement(\n  spatial: " ++ matrix_repr s.spatial ++ Std.Format.text ",\n  spin: " ++ matrix_repr s.spin ++ Std.Format.text "\n)"
 
 
-end SPG
+end SPG.Core.Algebra

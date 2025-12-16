@@ -5,7 +5,7 @@ Authors: Yizhou Tong
 -/
 import Mathlib.Data.Matrix.Basic
 
-namespace SPG.Geometry.SpatialOps
+namespace SPG.Core.Geometry.SpatialOps
 
 def mat_4bar_z : Matrix (Fin 3) (Fin 3) ℚ :=
   ![![0, 1, 0], ![-1, 0, 0], ![0, 0, -1]]
@@ -16,4 +16,4 @@ def mat_2_x : Matrix (Fin 3) (Fin 3) ℚ :=
 def mat_m_xy : Matrix (Fin 3) (Fin 3) ℚ :=
   ![![0, 1, 0], ![1, 0, 0], ![0, 0, 1]]
 
-end SPG.Geometry.SpatialOps
+end SPG.Core.Geometry.SpatialOps

@@ -3,22 +3,21 @@ Copyright (c) 2024 Yizhou Tong. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizhou Tong
 -/
-import SPG.Algebra.Basic
-import SPG.Algebra.Group
-import SPG.Geometry.SpatialOps
-import SPG.Geometry.SpinOps
+import SPG.Core.Algebra.AlgebraBasics
+import SPG.Core.Algebra.Group
+import SPG.Core.Geometry.SpatialOps
+import SPG.Core.Geometry.SpinOps
 import SPG.Interface.Notation
-import SPG.Physics.Hamiltonian
+import SPG.Model.Hamiltonian
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 
 namespace Demo.Altermagnet
 
-open SPG
-open SPG.Geometry.SpatialOps
-open SPG.Geometry.SpinOps
+open SPG.Core.Algebra
+open SPG.Core.Geometry.SpatialOps
+open SPG.Core.Geometry.SpinOps
 open SPG.Interface
-open SPG.Algebra
-open SPG.Physics.Hamiltonian
+open SPG.Model.Hamiltonian
 
 -- 1. Generators for D4h altermagnet
 def mat_4_z : Matrix (Fin 3) (Fin 3) ℚ := ![![0, -1, 0], ![1, 0, 0], ![0, 0, 1]]
@@ -48,13 +47,9 @@ def main : IO Unit := do
   IO.println s!"ICE Symbol (Approx): {Demo.Altermagnet.ice_symbol}"
   IO.println "Allowed Hamiltonian Terms H(k) (up to quadratic):"
 
-  let invariants := SPG.Physics.Hamiltonian.find_invariants Demo.Altermagnet.Altermagnet_Group
+  let invariants := SPG.Model.Hamiltonian.find_invariants Demo.Altermagnet.Altermagnet_Group 2
   for (p, s) in invariants do
-    let p_str := match p with
-      | .const => "1"
-      | .x => "kx" | .y => "ky" | .z => "kz"
-      | .xx => "kx^2" | .yy => "ky^2" | .zz => "kz^2"
-      | .xy => "kx ky" | .yz => "ky kz" | .zx => "kz kx"
+    let p_str := repr p -- Using default Repr for now
     let s_str := match s with
       | .I => "I" | .x => "σx" | .y => "σy" | .z => "σz"
     IO.println s!"  {p_str} * {s_str}"
@@ -62,19 +57,19 @@ def main : IO Unit := do
   -- Manually check d-wave altermagnet term: (kx^2 - ky^2) * sigma_z?
   -- Or kx ky * sigma_z ?
   -- Let's define a custom checker for kx^2 - ky^2
-  let check_custom (f : SPG.Vec3 → ℚ) (s : SPG.Physics.Hamiltonian.SpinComp) : Bool :=
-    let test_ks : List SPG.Vec3 := [![1, 0, 0], ![0, 1, 0], ![0, 0, 1], ![1, 1, 0], ![1, 0, 1], ![0, 1, 1], ![1, 2, 3]]
+  let check_custom (f : SPG.Core.Algebra.Vec3 → ℚ) (s : SPG.Model.Hamiltonian.SpinComp) : Bool :=
+    let test_ks : List SPG.Core.Algebra.Vec3 := [![1, 0, 0], ![0, 1, 0], ![0, 0, 1], ![1, 1, 0], ![1, 0, 1], ![0, 1, 1], ![1, 2, 3]]
     test_ks.all fun k =>
       -- Re-implement loop
       Demo.Altermagnet.Altermagnet_Group.all fun g =>
-        let val_gk := f (SPG.Physics.Hamiltonian.act_on_k g k)
+        let val_gk := f (SPG.Model.Hamiltonian.act_on_k g k)
         let val_k  := f k
         -- Re-use projection logic from check_invariant
         if s == .I then
           val_gk == val_k
         else
-          let s_prime := SPG.Physics.Hamiltonian.act_on_spin g s
-          let coeff := SPG.Physics.Hamiltonian.project_spin s_prime s
+          let s_prime := SPG.Model.Hamiltonian.act_on_spin g s
+          let coeff := SPG.Model.Hamiltonian.project_spin s_prime s
 
           -- Check eigenstate property (no mixing)
           let is_eigen :=
@@ -87,25 +82,25 @@ def main : IO Unit := do
           else
              false
 
-  let kx2_minus_ky2 (k : SPG.Vec3) : ℚ := k 0 * k 0 - k 1 * k 1
-  let kx2_plus_ky2  (k : SPG.Vec3) : ℚ := k 0 * k 0 + k 1 * k 1
-  let kx_ky         (k : SPG.Vec3) : ℚ := k 0 * k 1
+  let kx2_minus_ky2 (k : SPG.Core.Algebra.Vec3) : ℚ := k 0 * k 0 - k 1 * k 1
+  let kx2_plus_ky2  (k : SPG.Core.Algebra.Vec3) : ℚ := k 0 * k 0 + k 1 * k 1
+  let kx_ky         (k : SPG.Core.Algebra.Vec3) : ℚ := k 0 * k 1
 
   if check_custom kx2_minus_ky2 .z then
     IO.println "  (kx^2 - ky^2) * σz  [d-wave altermagnetism (x^2-y^2 type)]"
   else
     IO.println "  (kx^2 - ky^2) * σz  [FORBIDDEN]"
     -- Analyze why it is forbidden (or allowed)
-    let _ ← SPG.Physics.Hamiltonian.analyze_term_symmetry Demo.Altermagnet.Altermagnet_Group kx2_minus_ky2 .z "(kx^2 - ky^2)" "σz"
+    let _ ← SPG.Model.Hamiltonian.analyze_term_symmetry Demo.Altermagnet.Altermagnet_Group kx2_minus_ky2 .z "(kx^2 - ky^2)" "σz"
 
   if check_custom kx_ky .z then
     IO.println "  kx ky * σz          [d-wave altermagnetism (xy type)]"
   else
     IO.println "  kx ky * σz          [FORBIDDEN]"
-    let _ ← SPG.Physics.Hamiltonian.analyze_term_symmetry Demo.Altermagnet.Altermagnet_Group kx_ky .z "kx ky" "σz"
+    let _ ← SPG.Model.Hamiltonian.analyze_term_symmetry Demo.Altermagnet.Altermagnet_Group kx_ky .z "kx ky" "σz"
 
   if check_custom kx2_plus_ky2 .I then
     IO.println "  (kx^2 + ky^2) * I   [Standard kinetic term]"
   else
     IO.println "  (kx^2 + ky^2) * I   [FORBIDDEN]"
-    let _ ← SPG.Physics.Hamiltonian.analyze_term_symmetry Demo.Altermagnet.Altermagnet_Group kx2_plus_ky2 .I "(kx^2 + ky^2)" "I"
+    let _ ← SPG.Model.Hamiltonian.analyze_term_symmetry Demo.Altermagnet.Altermagnet_Group kx2_plus_ky2 .I "(kx^2 + ky^2)" "I"

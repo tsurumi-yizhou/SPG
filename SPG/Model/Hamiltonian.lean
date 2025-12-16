@@ -3,42 +3,58 @@ Copyright (c) 2024 Yizhou Tong. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yizhou Tong
 -/
-import SPG.Algebra.Basic
-import SPG.Algebra.Group
-import SPG.Geometry.SpatialOps
-import SPG.Geometry.SpinOps
+import SPG.Core.Algebra.AlgebraBasics
+import SPG.Core.Algebra.Group
+import SPG.Core.Geometry.SpatialOps
+import SPG.Core.Geometry.SpinOps
 import SPG.Interface.Notation
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 
-namespace SPG.Physics.Hamiltonian
+namespace SPG.Model.Hamiltonian
 
-open SPG
-open SPG.Geometry.SpatialOps
-open SPG.Geometry.SpinOps
+open SPG.Core.Algebra
+open SPG.Core.Geometry.SpatialOps
+open SPG.Core.Geometry.SpinOps
 open SPG.Interface
-open SPG.Algebra
 
--- Basis for polynomial k terms up to order 2
-inductive PolyTerm
-| const       -- 1
-| x | y | z   -- k_x, k_y, k_z
-| xx | yy | zz | xy | yz | zx -- k_x^2, ...
-deriving Repr, DecidableEq, Inhabited
+-- General Polynomial Term: represented by a list of indices (0=x, 1=y, 2=z)
+-- e.g. kx*ky^2 -> [0, 1, 1]
+structure PolyTerm where
+  indices : List (Fin 3)
+  deriving Repr, DecidableEq, Inhabited
+
+def mk_poly (l : List ℕ) : PolyTerm :=
+  { indices := l.map (fun i => if h : i < 3 then ⟨i, h⟩ else ⟨0, by simp⟩) }
+
+-- Common terms
+def Poly.const : PolyTerm := { indices := [] }
+def Poly.x : PolyTerm := mk_poly [0]
+def Poly.y : PolyTerm := mk_poly [1]
+def Poly.z : PolyTerm := mk_poly [2]
+def Poly.xx : PolyTerm := mk_poly [0, 0]
+def Poly.yy : PolyTerm := mk_poly [1, 1]
+def Poly.zz : PolyTerm := mk_poly [2, 2]
+def Poly.xy : PolyTerm := mk_poly [0, 1]
+def Poly.yz : PolyTerm := mk_poly [1, 2]
+def Poly.zx : PolyTerm := mk_poly [2, 0]
+-- Cubic terms (examples)
+def Poly.xxx : PolyTerm := mk_poly [0, 0, 0]
+def Poly.xyz : PolyTerm := mk_poly [0, 1, 2]
 
 def eval_poly (p : PolyTerm) (k : Vec3) : ℚ :=
-  match p with
-  | .const => 1
-  | .x => k 0
-  | .y => k 1
-  | .z => k 2
-  | .xx => k 0 * k 0
-  | .yy => k 1 * k 1
-  | .zz => k 2 * k 2
-  | .xy => k 0 * k 1
-  | .yz => k 1 * k 2
-  | .zx => k 2 * k 0
+  p.indices.foldl (fun acc i => acc * k i) 1
 
-def all_polys : List PolyTerm := [.const, .x, .y, .z, .xx, .yy, .zz, .xy, .yz, .zx]
+def generate_polys (degree : Nat) : List PolyTerm :=
+  let rec aux (d : Nat) : List (List (Fin 3)) :=
+    match d with
+    | 0 => [[]]
+    | d' + 1 =>
+      let prev := aux d'
+      prev.flatMap fun l => [l ++ [0], l ++ [1], l ++ [2]]
+
+  -- Generate all up to degree
+  let all_indices := (List.range (degree + 1)).flatMap fun d => aux d
+  all_indices.map fun l => { indices := l }
 
 -- Basis for spin matrices (sigma_x, sigma_y, sigma_z)
 inductive SpinComp
@@ -117,15 +133,15 @@ def check_invariant (group : List SPGElement) (p : PolyTerm) (s : SpinComp) : Bo
         else
           false -- If mixing occurs, this single term is not an invariant by itself.
 
-def find_invariants (group : List SPGElement) : List (PolyTerm × SpinComp) :=
-  let terms := (all_polys.product [.I, .x, .y, .z])
+def find_invariants (group : List SPGElement) (max_degree : Nat := 2) : List (PolyTerm × SpinComp) :=
+  let terms := (generate_polys max_degree).product [.I, .x, .y, .z]
   let simple_invariants := terms.filter fun (p, s) => check_invariant group p s
   simple_invariants
 
 -- Helper to print detailed symmetry analysis
-def analyze_term_symmetry (group : List SPGElement) (f : SPG.Vec3 → ℚ) (s : SpinComp) (f_name : String) (s_name : String) : IO Unit := do
+def analyze_term_symmetry (group : List SPGElement) (f : Vec3 → ℚ) (s : SpinComp) (f_name : String) (s_name : String) : IO Unit := do
   IO.println s!"\n  Analyzing term: {f_name} * {s_name}"
-  let test_k : SPG.Vec3 := ![1, 2, 3] -- Arbitrary k vector
+  let test_k : Vec3 := ![1, 2, 3] -- Arbitrary k vector
   let val_k := f test_k
 
   -- Check each generator (or all elements if small)
@@ -164,4 +180,4 @@ def analyze_term_symmetry (group : List SPGElement) (f : SPG.Vec3 → ℚ) (s : 
 
     i := i + 1
 
-end SPG.Physics.Hamiltonian
+end SPG.Model.Hamiltonian
