@@ -17,5 +17,8 @@ lean_exe "test_symmetry_breaking" where
 lean_exe "demo_altermagnet" where
   root := `Demo.Altermagnet
 
+lean_exe "demo_magnetic_phases" where
+  root := `Demo.MagneticPhases
+
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git"
