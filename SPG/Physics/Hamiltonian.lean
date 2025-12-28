@@ -47,7 +47,11 @@ deriving Repr, DecidableEq, Inhabited
 
 -- Action on k-vector (spatial part)
 def act_on_k (g : SPGElement) (k : Vec3) : Vec3 :=
-  Matrix.mulVec g.spatial k
+  let k_rot := Matrix.mulVec g.spatial k
+  if g.spin == spin_neg_I then
+    -k_rot
+  else
+    k_rot
 
 -- Action on spin component (spin part)
 def act_on_spin (g : SPGElement) (s : SpinComp) : Vec3 :=
