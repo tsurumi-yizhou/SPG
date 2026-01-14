@@ -10,11 +10,14 @@ import Mathlib.Data.Rat.Defs
 import Mathlib.Algebra.Ring.Basic
 import Mathlib.Algebra.Field.Defs
 import Mathlib.Algebra.Ring.Rat
+import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 
 namespace SPG
 
 def magnetic_action (g : SPGElement) (v : Vec3) : Vec3 :=
-  Matrix.mulVec g.spin (Matrix.mulVec g.spatial v)
+  let detR := Matrix.det g.spatial
+  let rotated := Matrix.mulVec g.spatial v
+  Matrix.mulVec g.spin (detR • rotated)
 
 def electric_action (g : SPGElement) (v : Vec3) : Vec3 :=
   Matrix.mulVec g.spatial v

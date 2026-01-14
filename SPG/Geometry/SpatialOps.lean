@@ -7,6 +7,11 @@ import Mathlib.Data.Matrix.Basic
 
 namespace SPG.Geometry.SpatialOps
 
+def mat_inv : Matrix (Fin 3) (Fin 3) ℚ := -1
+
+def mat_4_z : Matrix (Fin 3) (Fin 3) ℚ :=
+  ![![0, -1, 0], ![1, 0, 0], ![0, 0, 1]]
+
 def mat_4bar_z : Matrix (Fin 3) (Fin 3) ℚ :=
   ![![0, 1, 0], ![-1, 0, 0], ![0, 0, -1]]
 

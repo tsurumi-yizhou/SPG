@@ -18,10 +18,6 @@ open SPG.Interface
 open SPG.Algebra
 
 -- Define common matrices
-def mat_id : Matrix (Fin 3) (Fin 3) ℚ := 1
-def mat_inv : Matrix (Fin 3) (Fin 3) ℚ := -1
-def mat_4_z : Matrix (Fin 3) (Fin 3) ℚ := ![![0, -1, 0], ![1, 0, 0], ![0, 0, 1]]
-def mat_2_x : Matrix (Fin 3) (Fin 3) ℚ := ![![1, 0, 0], ![0, -1, 0], ![0, 0, -1]]
 def mat_2_xy : Matrix (Fin 3) (Fin 3) ℚ := ![![0, 1, 0], ![1, 0, 0], ![0, 0, -1]]
 
 -- 1. Ferromagnet (FM)

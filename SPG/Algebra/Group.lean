@@ -26,4 +26,7 @@ partial def generate_group (gens : List SPGElement) : List SPGElement :=
       loop combined
   loop gens
 
+def combine_generators (gens₁ gens₂ : List SPGElement) : List SPGElement :=
+  generate_group (gens₁ ++ gens₂)
+
 end SPG.Algebra

@@ -33,12 +33,9 @@ open SPG.Algebra
 -- So C2x flips mz. Not in MPG.
 -- So MPG should contain C4z and I. (C4h point group).
 
-def mat_4_z : Matrix (Fin 3) (Fin 3) ℚ := ![![0, -1, 0], ![1, 0, 0], ![0, 0, 1]]
-def mat_inv : Matrix (Fin 3) (Fin 3) ℚ := ![![ -1, 0, 0], ![0, -1, 0], ![0, 0, -1]]
-
 def gen_C4z : SPGElement := Op[mat_4_z, ^1]
 def gen_C2x : SPGElement := Op[mat_2_x, ^1]
-def gen_Inv : SPGElement := Op[mat_inv, ^1]
+def gen_Inv : SPGElement := Op[SPG.Geometry.SpatialOps.mat_inv, ^1]
 
 def full_group : List SPGElement := generate_group [gen_C4z, gen_C2x, gen_Inv]
 
