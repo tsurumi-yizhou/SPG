@@ -9,6 +9,7 @@ import SPG.Algebra.Group
 import SPG.Geometry.SpatialOps
 import SPG.Geometry.SpinOps
 import SPG.Physics.SymmetryBreaking
+import SPG.Physics.ResidualGroup
 import SPG.Physics.Hamiltonian
 import SPG.Data.MagneticGroups
 import SPG.Data.ICE_Notation
