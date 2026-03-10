@@ -5,12 +5,16 @@ Authors: Yizhou Tong
 -/
 import SPG.Algebra.Basic
 import SPG.Physics.Hamiltonian
+import SPG.Physics.ResidualGroup
 import SPG.Data.MagneticGroups
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+
+open SPG
 
 namespace Demo.Altermagnet
 
 open SPG
+open SPG.Physics
 open SPG.Physics.Hamiltonian
 open SPG.Data.MagneticGroups
 
@@ -60,3 +64,21 @@ def main : IO Unit := do
     IO.println "  (kx^2 + ky^2) * I   [Standard kinetic term]"
   else
     IO.println "  (kx^2 + ky^2) * I   [FORBIDDEN]"
+
+  -- Test residual group and Gamma point Zeeman term criterion
+  IO.println "\nResidual group analysis for electric field directions:"
+
+  let e_z : Vec3 := fun i => if i = 2 then 1 else 0  -- E || z
+  let e_x : Vec3 := fun i => if i = 0 then 1 else 0  -- E || x
+
+  IO.println "Field direction: E || z"
+  let gE_z := SPG.Physics.residual_group group e_z
+  IO.println s!"  Residual group order: {gE_z.length}"
+  let forbids_z := SPG.Physics.forbids_gamma_zeeman_by_s group e_z
+  IO.println s!"  Criterion forbids Gamma Zeeman term: {forbids_z}"
+
+  IO.println "Field direction: E || x"
+  let gE_x := SPG.Physics.residual_group group e_x
+  IO.println s!"  Residual group order: {gE_x.length}"
+  let forbids_x := SPG.Physics.forbids_gamma_zeeman_by_s group e_x
+  IO.println s!"  Criterion forbids Gamma Zeeman term: {forbids_x}"
